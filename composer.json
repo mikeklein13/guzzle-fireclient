@@ -1,0 +1,17 @@
+{
+    "name": "bryanlatten/guzzle-firephp",
+    "description": "Allow Guzzle to act as FirePHP client",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Bryan Latten",
+            "email": "bryan.latten@gmail.com"
+        }
+    ],
+    "require": {
+        "guzzle/guzzle": "3.8.0"
+    },
+    "autoload":{
+	   "psr-0": { "FireClient\\": "src/" }
+    }
+}

@@ -9,7 +9,8 @@
         }
     ],
     "require": {
-        "guzzle/guzzle": "3.8.0"
+        "guzzle/guzzle": "3.8.0",
+        "firephp/firephp-core": "0.4.0"
     },
     "autoload":{
 	   "psr-0": { "FireClient\\": "src/" }

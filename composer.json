@@ -1,6 +1,6 @@
 {
     "name": "bryanlatten/guzzle-firephp",
-    "description": "Allow Guzzle to act as FirePHP client",
+    "description": "Allow Guzzle to act as FirePHP client, proxying headers to original caller",
     "license": "MIT",
     "authors": [
         {
@@ -9,10 +9,15 @@
         }
     ],
     "require": {
-        "guzzle/guzzle": "3.8.0",
-        "firephp/firephp-core": "0.4.0"
+        "guzzlehttp/guzzle": "~5.0",
+        "firephp/firephp-core": "~0.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~4.0"
     },
     "autoload":{
-	   "psr-0": { "FireClient\\": "src/" }
+        "psr-4": {
+            "FireClient\\": "src/FireClient/"
+        }
     }
 }

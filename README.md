@@ -1,26 +1,53 @@
-guzzle-fireclient
-=================
+#guzzle-fireclient
 
-Integrates GuzzleHttp and FirePHP:
+### Log to the Firebug console from internal microservices, as easily as an external one.
 
-Calls with GuzzleHttp proxy remote service's FirePHP headers to original caller.
-
-
------ Typical FirePHP Usage -----
-
-1. Client browser requests a resource from Server A, with Firebug/FirePHP plugins installed
-2. Server A delivers requested resource, writing FirePHP headers into the response to Client Browser (things like DB queries, errors, timing, etc.).
-3. Client browser picks up FirePHP entries in response headers, which are formatted and displayed in the development console.
-4. Client is able to transparently see what the Server A is doing, can add additional FirePHP logs when necessary
+Use FireClient to ensure that calls made to microservices with [GuzzleHttp](http://guzzle.readthedocs.org/ "GuzzleHttp") will act as a [FirePHP](http://www.firephp.org/ "FirePHP") client, consuming the remote service's FirePHP headers and proxying to the original caller.
 
 
------ SOA/Microservice Usage: Client left in the dark -----
+#### The Problem: Microservice calls are in the dark
 
-1. Client browser requests resource from Server A, with Firebug/FirePHP plugins installed
-2. Server A builds resource for Client Browser by aggregating results from several internal microservices, hosted on servers B, C, D. Server A can not see work being performed by Servers B, C and D.
-3. Client Browser receives only FirePHP entries that Server A is directly doing, which is
-4. Client is not able to gain any insight into work being performed by other services, making debug difficult.
+- Client browser requests resource from Server A
+- Server A builds resource for Client Browser by aggregating results from several internal microservices, hosted on servers B, C, D. Server A can not see work being performed by Servers B, C and D.
+- Client Browser only receives FirePHP entries that Server A was directly performing
+- Client is not able to gain any insight into work being performed by other services, making debug difficult.
 
------- Solution ------
 
-Access microservices are accessed via GuzzleHttp + FireClient plugin. HTTP request acts as FirePHP client, and proxies those logs back to the original caller.
+#### The Solution
+
+Access microservices with GuzzleHttp + FireClient plugin. Requests made with GuzzleHttp act as a FirePHP client, consume FirePHP headers and are proxied to the original caller.
+
+
+#### Usage
+
+```
+use GuzzleHttp\Client;
+use FireClient\Subscribers\WildFireSubscriber;
+
+$guzzle     = new Client();
+$subscriber = new WildfireSubscriber();
+
+$guzzle->getEmitter()->attach( $subscriber );
+```
+
+#### Features
+
+Supports:
+- Log
+- Info
+- Warn
+- Error
+- Table
+- Begin Group
+- End Group
+
+Partial Support:
+- Trace
+  * would attempt to capture a live backtrace, and is therefore only simulated via table
+- Variable export
+
+#### Contributions
+
+- Must follow Behance's coding standards: https://github.com/behance/php-sniffs
+- Must include tests
+

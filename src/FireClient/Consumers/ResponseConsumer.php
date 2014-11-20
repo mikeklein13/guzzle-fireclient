@@ -30,7 +30,7 @@ class ResponseConsumer {
    */
   public function __construct( FirePHP $client = null ) {
 
-    $this->_client = ( $client ) ?: new FirePHP();
+    $this->_client = ( $client ) ?: FirePHP::getInstance( true );
 
   } // __construct
 

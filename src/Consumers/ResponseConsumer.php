@@ -1,6 +1,6 @@
 <?php
 
-namespace FireClient\Consumers;
+namespace Behance\FireClient\Consumers;
 
 use GuzzleHttp\Message\Response;
 use FirePHP as FirePHP;

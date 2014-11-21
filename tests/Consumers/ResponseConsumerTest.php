@@ -1,9 +1,9 @@
 <?php
 
-namespace FireClient\Subscribers;
+namespace Behance\FireClient\Subscribers;
 
-use FireClient\Subscribers\WildfireSubscriber;
-use FireClient\Consumers\ResponseConsumer;
+use Behance\FireClient\Subscribers\WildfireSubscriber;
+use Behance\FireClient\Consumers\ResponseConsumer;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Subscriber\Mock;
@@ -14,7 +14,7 @@ use FirePHP as FirePHP;
 
 class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
 
-  private $_target = 'FireClient\\Consumers\\ResponseConsumer';
+  private $_target = 'Behance\\FireClient\\Consumers\\ResponseConsumer';
 
   /**
    * @test

@@ -1,8 +1,8 @@
 <?php
 
-namespace FireClient\Subscribers;
+namespace Behance\FireClient\Subscribers;
 
-use FireClient\Consumers\ResponseConsumer;
+use Behance\FireClient\Consumers\ResponseConsumer;
 
 use GuzzleHttp\Event\SubscriberInterface;
 use GuzzleHttp\Event\BeforeEvent;

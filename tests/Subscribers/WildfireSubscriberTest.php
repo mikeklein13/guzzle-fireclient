@@ -1,9 +1,9 @@
 <?php
 
-namespace FireClient\Subscribers;
+namespace Behance\FireClient\Subscribers;
 
-use FireClient\Subscribers\WildfireSubscriber;
-use FireClient\Consumers\ResponseConsumer;
+use Behance\FireClient\Subscribers\WildfireSubscriber;
+use Behance\FireClient\Consumers\ResponseConsumer;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Subscriber\Mock;
@@ -14,7 +14,7 @@ use FirePHP as FirePHP;
 
 class WildfireSubscriberTest extends \PHPUnit_Framework_TestCase {
 
-  private $_target = 'FireClient\\Subscribers\\WildfireSubscriber';
+  private $_target = 'Behance\\FireClient\\Subscribers\\WildfireSubscriber';
 
   /**
    * @test
@@ -106,7 +106,7 @@ class WildfireSubscriberTest extends \PHPUnit_Framework_TestCase {
 
     $guzzle     = new Client();
     $mock       = new Mock( [ new Response( $http_code ) ] );
-    $consumer   = $this->getMock( 'FireClient\Consumers\ResponseConsumer', [ 'run' ] );
+    $consumer   = $this->getMock( 'Behance\\FireClient\\Consumers\\ResponseConsumer', [ 'run' ] );
 
     $subscriber->setConsumer( $consumer );
 

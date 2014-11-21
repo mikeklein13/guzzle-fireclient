@@ -1,5 +1,5 @@
 {
-    "name": "bryanlatten/guzzle-firephp",
+    "name": "behance/guzzle-fireclient",
     "description": "Allow Guzzle to act as FirePHP client, proxying headers to original caller",
     "license": "MIT",
     "authors": [
@@ -17,7 +17,7 @@
     },
     "autoload":{
         "psr-4": {
-            "FireClient\\": "src/FireClient/"
+            "Behance\\FireClient\\": "src/"
         }
     }
 }

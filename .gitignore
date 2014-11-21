@@ -2,3 +2,4 @@
 /composer.lock
 /bin
 /cache.properties
+.DS_Store

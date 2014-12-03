@@ -14,7 +14,27 @@ use FirePHP as FirePHP;
 
 class WildfireSubscriberTest extends \PHPUnit_Framework_TestCase {
 
-  private $_target = 'Behance\\FireClient\\Subscribers\\WildfireSubscriber';
+  private $_target   = 'Behance\\FireClient\\Subscribers\\WildfireSubscriber',
+          $_consumer = 'Behance\\FireClient\\Consumers\\ResponseConsumer';
+
+
+  /**
+   * @test
+   */
+  public function setterGetter() {
+
+    $subscriber = new WildfireSubscriber();
+    $consumer   = new ResponseConsumer();
+
+    $this->assertInstanceOf( $this->_consumer, $subscriber->getConsumer() );
+
+    $this->assertNotSame( $consumer, $subscriber->getConsumer() );
+
+    $subscriber->setConsumer( $consumer );
+
+    $this->assertSame( $consumer, $subscriber->getConsumer() );
+
+  } // setterGetter
 
   /**
    * @test
@@ -114,7 +134,7 @@ class WildfireSubscriberTest extends \PHPUnit_Framework_TestCase {
 
       $consumer->expects( $this->once() )
         ->method( 'run' )
-        ->with( $this->isInstanceOf( 'GuzzleHttp\Message\Response' ) );
+        ->with( $this->isInstanceOf( 'GuzzleHttp\Event\CompleteEvent' ) );
 
     } // if http_code < 400
 
@@ -151,8 +171,11 @@ class WildfireSubscriberTest extends \PHPUnit_Framework_TestCase {
    */
   public function subscribe( $http_code ) {
 
-    $name       = $this->_target;
-    $subscriber = new $name();
+    $firephp    = $this->getMock( 'FirePHP' );
+    $subscriber = $this->getMock( $this->_target, null );
+
+    $consumer   = $this->getMock( $this->_consumer, [], [ $firephp ] );
+    $subscriber->setConsumer( $consumer );
 
     $guzzle     = new Client();
     $mock       = new Mock( [ new Response( $http_code ) ] );
@@ -168,9 +191,11 @@ class WildfireSubscriberTest extends \PHPUnit_Framework_TestCase {
     }
 
     catch( RequestException $e ) {
+
       // This is expected, but only for 400-500+ response codes
       $this->assertGreaterThanOrEqual( 400, $http_code );
-    }
+
+    } // catch RequestException
 
   } // subscribe
 

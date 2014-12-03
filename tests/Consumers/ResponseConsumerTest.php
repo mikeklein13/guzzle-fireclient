@@ -16,11 +16,12 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
 
   private $_target = 'Behance\\FireClient\\Consumers\\ResponseConsumer';
 
+
   /**
    * @test
    * @dataProvider nonWildfireHeaderProvider
    */
-  public function runNonWildfire( $header ) {
+  public function proxyNonWildfire( $header ) {
 
     $response = new Response( 200, $header );
     $consumer = $this->getMock( $this->_target, [ '_proxy' ] );
@@ -28,9 +29,9 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
     $consumer->expects( $this->never() )
       ->method( '_proxy' );
 
-    $consumer->run( $response );
+    $consumer->proxyResponseHeaders( $response );
 
-  } // runNonWildfire
+  } // proxyNonWildfire
 
 
   /**
@@ -51,7 +52,7 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
    * @test
    * @dataProvider wildfireHeaderProvider
    */
-  public function runWildfire( $header, $type, $expected ) {
+  public function proxyWildfire( $header, $type, $expected ) {
 
     $prefix = '[NEW PREFIX]';
     $client = $this->getMock( 'FirePHP', [ $type ] );
@@ -64,10 +65,71 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
     $consumer = $this->getMock( $this->_target, null, [ $client ] );
 
     $consumer->setRemotePrefix( $prefix );
-    $consumer->run( $response );
+    $consumer->proxyResponseHeaders( $response );
 
-  } // runWildfire
+  } // proxyWildfire
 
+
+  /**
+   * @test
+   * @dataProvider wildfireTableHeaderProvider
+   */
+  public function proxyWildfireTable( $header, $label = '' ) {
+
+    $prefix = '[NEW PREFIX]';
+    $client = $this->getMock( 'FirePHP', [ 'table', 'warn' ] );
+
+    if ( !empty( $label ) ) {
+
+      $client->expects( $this->once() )
+        ->method( 'table' )
+        ->with( 'table', $prefix . ' ' . $label, $this->isType( 'array' ) );
+
+      $client->expects( $this->never() )
+        ->method( 'warn' );
+
+    } // if label
+
+    else {
+
+      // Missing a label is an error condition
+      $client->expects( $this->once() )
+        ->method( 'warn' );
+
+      $client->expects( $this->never() )
+        ->method( 'table' );
+
+    } // else
+
+    $headers  = [ ResponseConsumer::PROTOCOL_PREFIX . '1-2-3-4' => $header ];
+    $response = new Response( 200, $headers );
+    $consumer = $this->getMock( $this->_target, null, [ $client ] );
+
+    $consumer->setRemotePrefix( $prefix );
+    $consumer->proxyResponseHeaders( $response );
+
+  } // proxyWildfireTable
+
+
+  /**
+   * @return array
+   */
+  public function wildfireTableHeaderProvider() {
+
+    $data   = [];
+    $data[] = [ 'Key', 'Value' ];
+    $data[] = [ 'abc', 123 ];
+
+    $label  = 'ABC';
+
+    $table_label = [ 'Label' => $label ];
+
+    return [
+        [ $this->_buildWildfireValue( FirePHP::TABLE, $data, $table_label ), $label ],
+        [ $this->_buildWildfireValue( FirePHP::TABLE, $data, [] ), '' ]
+    ];
+
+  } // wildfireTableHeaderProvider
 
   /**
    * Same test as below, but captures request at client level instead of during reporting
@@ -76,18 +138,19 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
   public function runWildfireErrorWarn() {
 
     $prefix  = '[PREFIX]';
-    $client  = $this->getMock( 'FirePHP', [ 'warn' ] );
+    $client  = $this->getMock( 'FirePHP', [ 'table', 'warn' ] ); // Table is included for the initial publishing of the request
     $client->expects( $this->once() )
       ->method( 'warn' )
       ->with( $this->stringStartsWith( $prefix . ' ' ) );
 
-    $headers = [ ResponseConsumer::PROTOCOL_PREFIX . '1-2-3-4' => 'abcdefg' ];
+    $headers  = [ ResponseConsumer::PROTOCOL_PREFIX . '1-2-3-4' => 'abcdefg' ];
 
-    $response = new Response( 200, $headers );
+    $mock     = new Mock( [ new Response( 200, $headers ) ] );
     $consumer = $this->getMock( $this->_target, null, [ $client ] );
-
     $consumer->setRemotePrefix( $prefix );
-    $consumer->run( $response );
+
+    $client = $this->_buildClient( $consumer, $mock );
+    $client->get( '/' );
 
   } // runWildfireErrorWarn
 
@@ -98,17 +161,20 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
    */
   public function runWildfireError( $payload, $expected_error ) {
 
-    $client  = $this->getMock( 'FirePHP' );
+    $console = $this->getMock( 'FirePHP' );
     $headers = [ ResponseConsumer::PROTOCOL_PREFIX . '1-2-3-4' => $payload ];
 
-    $response = new Response( 200, $headers );
-    $consumer = $this->getMock( $this->_target, [ '_reportParseError' ], [ $client ] );
+    $response  = new Response( 200, $headers );
+    $mock      = new Mock( [ $response ] );
+
+    $consumer  = $this->getMock( $this->_target, [ '_reportParseError' ], [ $console ] );
 
     $consumer->expects( $this->once() )
       ->method( '_reportParseError' )
       ->with( $expected_error );
 
-    $consumer->run( $response );
+    $client = $this->_buildClient( $consumer, $mock );
+    $client->get( '/' );
 
   } // runWildfireError
 
@@ -170,12 +236,35 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
 
 
   /**
+   * @param Behance\FireClient\Consumers\ResponseConsumer $consumer
+   * @param GuzzleHttp\Subscriber\Mock $mock
+   *
+   * @return GuzzleHttp\Client
+   */
+  private function _buildClient( ResponseConsumer $consumer, Mock $mock ) {
+
+    $client     = new Client();
+    $emitter    = $client->getEmitter();
+    $subscriber = new WildfireSubscriber();
+
+    $subscriber->setConsumer( $consumer );
+
+    $emitter->attach( $mock );
+    $emitter->attach( $subscriber );
+
+    return $client;
+
+  } // _buildClient
+
+
+  /**
    * @param string $type
    * @param string $body
+   * @param array  $additional_descriptors
    *
    * @return string
    */
-  private function _buildWildfireValue( $type, $body ) {
+  private function _buildWildfireValue( $type, $body, array $additional_descriptors = [] ) {
 
     $descriptor = [
         'Type' => strtoupper( $type ),
@@ -183,7 +272,8 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
         'Line' => __LINE__
     ];
 
-    $response = json_encode( [ $descriptor, $body ] );
+    $descriptor = array_merge( $descriptor, $additional_descriptors );
+    $response   = json_encode( [ $descriptor, $body ] );
 
     return (string)strlen( $response ) . '|' . $response . '|';
 

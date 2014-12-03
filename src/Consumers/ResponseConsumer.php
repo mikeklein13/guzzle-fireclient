@@ -3,6 +3,9 @@
 namespace Behance\FireClient\Consumers;
 
 use GuzzleHttp\Message\Response;
+use GuzzleHttp\Message\Request;
+use GuzzleHttp\Event\CompleteEvent;
+
 use FirePHP as FirePHP;
 
 /**
@@ -22,7 +25,10 @@ class ResponseConsumer {
   /**
    * @var string  when rebroadcasting message, how to prefix transmission
    */
-  protected $_remote_prefix = '[REMOTE]';
+  protected $_remote_prefix           = '[REMOTE]',
+            $_response_preview_length = 128,
+            $_client;
+
 
 
   /**
@@ -46,11 +52,51 @@ class ResponseConsumer {
 
 
   /**
+   * Convenience wrapper to publishes the request, while proxying any response Wildfire headers
+   *
+   * @param GuzzleHttp\Event\CompleteEvent $event
+   */
+  public function run( CompleteEvent $event ) {
+
+    $response = $event->getResponse();
+
+    $this->publishRequest( $event->getRequest(), $response );
+    $this->proxyResponseHeaders( $response );
+
+  } // run
+
+
+  /**
+   * @param GuzzleHttp\Message\Request
    * @param GuzzleHttp\Message\Response
    */
-  public function run( Response $response ) {
+  public function publishRequest( Request $request, Response $response ) {
 
-    $headers = $response->getHeaders();
+    $body    = $response->getBody();
+    $preview = ( $body )
+               ? $body->read( $this->_response_preview_length )
+               : '';
+
+    $table    = [];
+    $table[]  = [ 'Key',      'Value' ];
+    $table[]  = [ 'Phrase',   $response->getReasonPhrase() ];
+    $table[]  = [ 'Host',     $request->getHost() ];
+    $table[]  = [ 'Protocol', $request->getScheme() ];
+    $table[]  = [ 'Preview',  $preview ];
+
+    $message = sprintf( "%s <%s> (%d) %s", $this->_remote_prefix, $request->getMethod(), $response->getStatusCode(), $request->getUrl() );
+
+    $this->_client->table( $message, $table );
+
+  } // publishRequest
+
+
+  /**
+   * @param GuzzleHttp\Message\Response
+   */
+  public function proxyResponseHeaders( Response $response ) {
+
+    $headers  = $response->getHeaders();
 
     foreach ( $headers as $header_name => $header_values ) {
 
@@ -69,7 +115,7 @@ class ResponseConsumer {
 
     } // foreach headers
 
-  } // run
+  } // proxyResponseHeaders
 
 
   /**

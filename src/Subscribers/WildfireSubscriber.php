@@ -48,7 +48,7 @@ class WildfireSubscriber implements SubscriberInterface {
    */
   public function onComplete( CompleteEvent $event ) {
 
-    $this->getConsumer()->run( $event->getResponse() );
+    $this->getConsumer()->run( $event );
 
   } // onComplete
 

@@ -4,7 +4,7 @@ namespace Behance\FireClient\Consumers;
 
 use GuzzleHttp\Message\Response;
 use GuzzleHttp\Message\Request;
-use GuzzleHttp\Event\CompleteEvent;
+use GuzzleHttp\Event\EndEvent;
 
 use FirePHP as FirePHP;
 
@@ -54,25 +54,33 @@ class ResponseConsumer {
   /**
    * Convenience wrapper to publishes the request, while proxying any response Wildfire headers
    *
-   * @param GuzzleHttp\Event\CompleteEvent $event
+   * @param GuzzleHttp\Event\EndEvent $event
+   * @param float $timing
    */
-  public function run( CompleteEvent $event ) {
+  public function run( EndEvent $event, $timing ) {
 
     $response = $event->getResponse();
 
-    $this->publishRequest( $event->getRequest(), $response );
+    $this->publishRequest( $event->getRequest(), $response, $timing );
     $this->proxyResponseHeaders( $response );
 
   } // run
 
 
   /**
+   * Announces HTTP request to Wildfire channel
+   *
    * @param GuzzleHttp\Message\Request
-   * @param GuzzleHttp\Message\Response
+   * @param GuzzleHttp\Message\Response   when dealing with error events, response may not be populated
+   * @param float $elapsed
    */
-  public function publishRequest( Request $request, Response $response ) {
+  public function publishRequest( Request $request, Response $response = null, $elapsed = 0 ) {
 
-    $body    = $response->getBody();
+    // Ensure response is populated before extracting body from it
+    $body    = ( $response )
+               ? $response->getBody()
+               : '';
+
     $preview = ( $body )
                ? $body->read( $this->_response_preview_length )
                : '';
@@ -84,7 +92,16 @@ class ResponseConsumer {
     $table[]  = [ 'Protocol', $request->getScheme() ];
     $table[]  = [ 'Preview',  $preview ];
 
-    $message = sprintf( "%s <%s> (%d) %s", $this->_remote_prefix, $request->getMethod(), $response->getStatusCode(), $request->getUrl() );
+    if ( $response && $response->getEffectiveUrl() != $request->getUrl() ) {
+      $table[] = [ 'Effective URL', $response->getEffectiveUrl() ];
+    }
+
+    $elapsed  = round( $elapsed, 4 );
+    $status   = ( $response )
+                ? $response->getStatusCode()
+                : 0;
+
+    $message = sprintf( "%s <%s> (%d) %s (%f)s", $this->_remote_prefix, $request->getMethod(), $status, $request->getUrl(), $elapsed );
 
     $this->_client->table( $message, $table );
 

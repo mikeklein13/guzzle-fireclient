@@ -139,6 +139,10 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
 
     $prefix  = '[PREFIX]';
     $client  = $this->getMock( 'FirePHP', [ 'table', 'warn' ] ); // Table is included for the initial publishing of the request
+
+    $client->expects( $this->once() )
+      ->method( 'table' );
+
     $client->expects( $this->once() )
       ->method( 'warn' )
       ->with( $this->stringStartsWith( $prefix . ' ' ) );

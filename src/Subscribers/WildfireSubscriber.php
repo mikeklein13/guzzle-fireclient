@@ -6,14 +6,15 @@ use Behance\FireClient\Consumers\ResponseConsumer;
 
 use GuzzleHttp\Event\SubscriberInterface;
 use GuzzleHttp\Event\BeforeEvent;
-use GuzzleHttp\Event\CompleteEvent;
+use GuzzleHttp\Event\EndEvent;
 
 /**
  * Provides connection mechanism for subscription and distribution of request events
  */
 class WildfireSubscriber implements SubscriberInterface {
 
-  private $_client_version = '0.7.4';
+  private $_client_version = '0.7.4', // @var string  which version of FirePHP client to present to remote services
+          $_timer;                    // @var float
 
   /**
    * {@inheritDoc}
@@ -22,7 +23,7 @@ class WildfireSubscriber implements SubscriberInterface {
 
     return [
         'before'   => [ 'onBefore' ],
-        'complete' => [ 'onComplete' ]
+        'end'      => [ 'onEnd' ]
     ];
 
   } // getEvents
@@ -36,6 +37,8 @@ class WildfireSubscriber implements SubscriberInterface {
    */
   public function onBefore( BeforeEvent $event ) {
 
+    $this->_timer = $this->_getMicrotime(); // Start the timer
+
     $event->getRequest()->addHeader( 'User-Agent', 'FirePHP/' . $this->_client_version );
 
   } // onBefore
@@ -44,13 +47,16 @@ class WildfireSubscriber implements SubscriberInterface {
   /**
    * Consumes the response headers, proxying back to original caller
    *
-   * @param GuzzleHttp\CompleteEvent $event
+   * @param GuzzleHttp\EndEvent $event
    */
-  public function onComplete( CompleteEvent $event ) {
+  public function onEnd( EndEvent $event ) {
 
-    $this->getConsumer()->run( $event );
+    // Elapsed time: now - then
+    $elapsed = $this->_getMicrotime() - $this->_timer;
 
-  } // onComplete
+    $this->getConsumer()->run( $event, $elapsed );
+
+  } // onEnd
 
 
   /**
@@ -75,5 +81,15 @@ class WildfireSubscriber implements SubscriberInterface {
     return $this->_consumer;
 
   } // getConsumer
+
+
+  /**
+   * @return float
+   */
+  protected function _getMicrotime() {
+
+    return microtime( true );
+
+  } // _getMicrotime
 
 } // WildfireSubscriber

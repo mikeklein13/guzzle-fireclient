@@ -43,7 +43,7 @@ class WildfireSubscriberTest extends \PHPUnit_Framework_TestCase {
 
     $expected_events = [
         'before',
-        'complete'
+        'end'
     ];
 
     $subscriptions = ( new WildfireSubscriber() )->getEvents();
@@ -68,27 +68,16 @@ class WildfireSubscriberTest extends \PHPUnit_Framework_TestCase {
    */
   public function subscribeEvents( $http_code ) {
 
-    $methods    = [ 'onBefore', 'onComplete' ];
+    $methods    = [ 'onBefore', 'onEnd' ];
     $subscriber = $this->getMock( $this->_target, $methods );
 
     $subscriber->expects( $this->once() )
       ->method( 'onBefore' )
       ->with( $this->isInstanceOf( 'GuzzleHttp\Event\BeforeEvent' ) );
 
-    if ( $http_code < 400 ) {
-
-      $subscriber->expects( $this->once() )
-        ->method( 'onComplete' )
-        ->with( $this->isInstanceOf( 'GuzzleHttp\Event\CompleteEvent' ) );
-
-    } // if http_code < 400
-
-    else {
-
-      $subscriber->expects( $this->never() )
-        ->method( 'onComplete' );
-
-    } // else (>=400)
+    $subscriber->expects( $this->once() )
+      ->method( 'onEnd' )
+      ->with( $this->isInstanceOf( 'GuzzleHttp\Event\EndEvent' ) );
 
     $guzzle  = new Client();
     $mock    = new Mock( [ new Response( $http_code ) ] );
@@ -130,20 +119,9 @@ class WildfireSubscriberTest extends \PHPUnit_Framework_TestCase {
 
     $subscriber->setConsumer( $consumer );
 
-    if ( $http_code < 400 ) {
-
-      $consumer->expects( $this->once() )
-        ->method( 'run' )
-        ->with( $this->isInstanceOf( 'GuzzleHttp\Event\CompleteEvent' ) );
-
-    } // if http_code < 400
-
-    else {
-
-      $consumer->expects( $this->never() )
-        ->method( 'run' );
-
-    } // else (http_code >= 400)
+    $consumer->expects( $this->once() )
+      ->method( 'run' )
+      ->with( $this->isInstanceOf( 'GuzzleHttp\Event\EndEvent' ) );
 
     $emitter = $guzzle->getEmitter();
     $emitter->attach( $mock );

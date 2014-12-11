@@ -246,23 +246,24 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
    */
   public function publishRequestNoResponse() {
 
-    $method   = 'GET';
+    $method   = 'PATCH';
     $host     = 'abc.com';
     $protocol = 'https';
     $url      = $protocol . '://' . $host;
-    $request  = new Request( $method, $url );
 
-    $client   = $this->getMock( 'FirePHP', [ 'table' ] );
+    $request_body = 'abcdefghj';
+    $client       = new Client();
+    $request      = $client->createRequest( $method, $url, [ 'body' => $request_body ] );
+    $console      = $this->getMock( 'FirePHP', [ 'table' ] );
+    $called_with  = [];
 
-    $called_with = [];
-
-    $client->expects( $this->once() )
+    $console->expects( $this->once() )
       ->method( 'table' )
       ->will( $this->returnCallback( function( $message, $table ) use ( &$called_with ) {
         $called_with = [ $message, $table ];
       } ) );
 
-    $consumer = new ResponseConsumer( $client );
+    $consumer = new ResponseConsumer( $console );
     $consumer->publishRequest( $request );
 
     // Extract parameters out of callback injection
@@ -279,7 +280,7 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
       $reformat[ $item[0] ] = $item[1];
     }
 
-    $required = [ 'Key', 'Phrase', 'Host', 'Protocol', 'Preview' ];
+    $required = [ 'Key', 'Phrase', 'Host', 'Protocol', 'Request', 'Response' ];
 
     foreach ( $required as $require ) {
       $this->assertContains( $require, $table_keys );
@@ -288,7 +289,7 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
     $this->assertEquals( ResponseConsumer::ERROR_NO_RESPONSE, $reformat['Phrase'] );
     $this->assertEquals( $host, $reformat['Host'] );
     $this->assertEquals( $protocol, $reformat['Protocol'] );
-    $this->assertEmpty( $reformat['Preview'] );
+    $this->assertEquals( $request_body, $reformat['Request'] );
 
   } // publishRequestNoResponse
 

@@ -27,8 +27,8 @@ class ResponseConsumer {
   /**
    * @var string  when rebroadcasting message, how to prefix transmission
    */
-  protected $_remote_prefix           = '[REMOTE]',
-            $_response_preview_length = 128,
+  protected $_remote_prefix  = '[REMOTE]',
+            $_preview_length = 128, // For both request and response body previews
             $_client;
 
 
@@ -79,13 +79,18 @@ class ResponseConsumer {
   public function publishRequest( Request $request, Response $response = null, $elapsed = 0 ) {
 
     // Ensure response is populated before extracting body from it
-    $body    = ( $response )
-               ? $response->getBody()
-               : '';
+    $response_body = ( $response )
+                     ? $response->getBody()
+                     : '';
 
-    $preview = ( $body )
-               ? $body->read( $this->_response_preview_length )
-               : '';
+    $response_preview = ( $response_body )
+                        ? $response_body->read( $this->_preview_length )
+                        : '';
+
+    $request_body    = $request->getBody();
+    $request_preview = ( $request_body )
+                       ? $request_body->read( $this->_preview_length )
+                       : '';
 
     $phrase   = ( $response )
                 ? $response->getReasonPhrase()
@@ -96,7 +101,8 @@ class ResponseConsumer {
     $table[]  = [ 'Phrase',   $phrase ];
     $table[]  = [ 'Host',     $request->getHost() ];
     $table[]  = [ 'Protocol', $request->getScheme() ];
-    $table[]  = [ 'Preview',  $preview ];
+    $table[]  = [ 'Request',  $request_preview ];
+    $table[]  = [ 'Response', $response_preview ];
 
     if ( $response && $response->getEffectiveUrl() != $request->getUrl() ) {
       $table[] = [ 'Effective URL', $response->getEffectiveUrl() ];

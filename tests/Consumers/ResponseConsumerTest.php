@@ -7,6 +7,8 @@ use Behance\FireClient\Consumers\ResponseConsumer;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Subscriber\Mock;
+use GuzzleHttp\Event\EndEvent;
+use GuzzleHttp\Message\Request;
 use GuzzleHttp\Message\Response;
 use GuzzleHttp\Exception\RequestException;
 
@@ -238,6 +240,87 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
 
   } // wildfireHeaderProvider
 
+
+  /**
+   * @test
+   */
+  public function publishRequestNoResponse() {
+
+    $method   = 'GET';
+    $host     = 'abc.com';
+    $protocol = 'https';
+    $url      = $protocol . '://' . $host;
+    $request  = new Request( $method, $url );
+
+    $client   = $this->getMock( 'FirePHP', [ 'table' ] );
+
+    $called_with = [];
+
+    $client->expects( $this->once() )
+      ->method( 'table' )
+      ->will( $this->returnCallback( function( $message, $table ) use ( &$called_with ) {
+        $called_with = [ $message, $table ];
+      } ) );
+
+    $consumer = new ResponseConsumer( $client );
+    $consumer->publishRequest( $request );
+
+    // Extract parameters out of callback injection
+    list( $message, $table ) = $called_with;
+
+    $this->assertContains( $url, $message );
+    $this->assertContains( $method, $message );
+
+    $table_keys = [];
+    $reformat   = [];
+
+    foreach ( $table as $item ) {
+      $table_keys[] = $item[0];
+      $reformat[ $item[0] ] = $item[1];
+    }
+
+    $required = [ 'Key', 'Phrase', 'Host', 'Protocol', 'Preview' ];
+
+    foreach ( $required as $require ) {
+      $this->assertContains( $require, $table_keys );
+    }
+
+    $this->assertEquals( ResponseConsumer::ERROR_NO_RESPONSE, $reformat['Phrase'] );
+    $this->assertEquals( $host, $reformat['Host'] );
+    $this->assertEquals( $protocol, $reformat['Protocol'] );
+    $this->assertEmpty( $reformat['Preview'] );
+
+  } // publishRequestNoResponse
+
+
+  /**
+   * @test
+   */
+  public function runNoResponse() {
+
+    $request = new Request( 'GET', 'abc.com' );
+    $event   = $this->getMockBuilder( 'GuzzleHttp\Event\EndEvent' )
+      ->disableOriginalConstructor()
+      ->setMethods( [ 'getRequest', 'getResponse' ] )
+      ->getMock();
+
+    $event->expects( $this->once() )
+      ->method( 'getRequest' )
+      ->will( $this->returnValue( $request ) );
+
+    // Simulate failed request
+    $event->expects( $this->once() )
+      ->method( 'getResponse' )
+      ->will( $this->returnValue( null ) );
+
+    $consumer = $this->getMock( $this->_target, [ 'publishRequest' ] );
+
+    $consumer->expects( $this->once() )
+      ->method( 'publishRequest' );
+
+    $consumer->run( $event, 1 );
+
+  } // runNoResponse
 
   /**
    * @param Behance\FireClient\Consumers\ResponseConsumer $consumer

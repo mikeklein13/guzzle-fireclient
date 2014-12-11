@@ -22,6 +22,8 @@ class ResponseConsumer {
   const ERROR_TABLE_WRONG_DATA = "Table requires an array: %message%";
   const ERROR_UNHANDLED_TYPE   = "Unhandled message type: %message_type%";
 
+  const ERROR_NO_RESPONSE      = "No Response";
+
   /**
    * @var string  when rebroadcasting message, how to prefix transmission
    */
@@ -85,9 +87,13 @@ class ResponseConsumer {
                ? $body->read( $this->_response_preview_length )
                : '';
 
+    $phrase   = ( $response )
+                ? $response->getReasonPhrase()
+                : self::ERROR_NO_RESPONSE;
+
     $table    = [];
     $table[]  = [ 'Key',      'Value' ];
-    $table[]  = [ 'Phrase',   $response->getReasonPhrase() ];
+    $table[]  = [ 'Phrase',   $phrase ];
     $table[]  = [ 'Host',     $request->getHost() ];
     $table[]  = [ 'Protocol', $request->getScheme() ];
     $table[]  = [ 'Preview',  $preview ];
@@ -96,7 +102,7 @@ class ResponseConsumer {
       $table[] = [ 'Effective URL', $response->getEffectiveUrl() ];
     }
 
-    $elapsed  = round( $elapsed, 4 );
+    $elapsed  = number_format( $elapsed, 4 );
     $status   = ( $response )
                 ? $response->getStatusCode()
                 : 0;
@@ -111,7 +117,11 @@ class ResponseConsumer {
   /**
    * @param GuzzleHttp\Message\Response
    */
-  public function proxyResponseHeaders( Response $response ) {
+  public function proxyResponseHeaders( Response $response = null ) {
+
+    if ( !$response ) {
+      return;
+    }
 
     $headers  = $response->getHeaders();
 

@@ -264,6 +264,10 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
       } ) );
 
     $consumer = new ResponseConsumer( $console );
+
+    // Reading here should not affect the read() call within publishRequest()
+    $request->getBody()->read( 10 );
+
     $consumer->publishRequest( $request );
 
     // Extract parameters out of callback injection

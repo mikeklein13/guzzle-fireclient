@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/behance/guzzle-fireclient.svg?branch=master)](https://travis-ci.org/behance/guzzle-fireclient)
+
 #guzzle-fireclient
 
 ### Log to the Firebug console from internal microservices, as easily as an external one.

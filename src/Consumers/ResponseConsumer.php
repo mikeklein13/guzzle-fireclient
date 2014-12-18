@@ -13,7 +13,7 @@ use FirePHP as FirePHP;
  */
 class ResponseConsumer {
 
-  const PROTOCOL_PREFIX        = 'X-Wf-';
+  const PATTERN_MESSAGE_FORMAT = '/X\-Wf-\d-\d-\d-\d/';
 
   const ERROR_BAD_SIZE         = 'Body does not match expected size, expected %expected_size% vs actual %actual_size%';
   const ERROR_UNABLE_TO_DECODE = 'Unable to decode line payload: %line%';
@@ -105,12 +105,13 @@ class ResponseConsumer {
                 : self::ERROR_NO_RESPONSE;
 
     $table    = [];
-    $table[]  = [ 'Key',      'Value' ];
-    $table[]  = [ 'Phrase',   $phrase ];
-    $table[]  = [ 'Host',     $request->getHost() ];
-    $table[]  = [ 'Protocol', $request->getScheme() ];
-    $table[]  = [ 'Request',  $request_preview ];
-    $table[]  = [ 'Response', $response_preview ];
+    $table[]  = [ 'Key',        'Value' ];
+    $table[]  = [ 'Phrase',     $phrase ];
+    $table[]  = [ 'Host',       $request->getHost() ];
+    $table[]  = [ 'Protocol',   $request->getScheme() ];
+    $table[]  = [ 'User Agent', $request->getHeader( 'User-Agent' ) ];
+    $table[]  = [ 'Request',    $request_preview ];
+    $table[]  = [ 'Response',   $response_preview ];
 
     if ( $response && $response->getEffectiveUrl() != $request->getUrl() ) {
       $table[] = [ 'Effective URL', $response->getEffectiveUrl() ];
@@ -166,7 +167,9 @@ class ResponseConsumer {
    */
   public function isLineWildfireProtocol( $message ) {
 
-    return ( strpos( $message, self::PROTOCOL_PREFIX ) !== false );
+    // TODO: acknoledge multiple protocol types
+
+    return preg_match( self::PATTERN_MESSAGE_FORMAT, $message );
 
   } // isLineWildfireProtocol
 
@@ -296,7 +299,7 @@ class ResponseConsumer {
     }
 
     $label = $descriptor['Label'];
-    $client->table( 'table', "{$prefix} {$label}", $table );
+    $client->table( "{$prefix} {$label}", $table );
 
   } // _proxyTable
 

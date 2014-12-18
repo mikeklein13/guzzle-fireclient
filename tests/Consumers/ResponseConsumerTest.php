@@ -16,7 +16,8 @@ use FirePHP as FirePHP;
 
 class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
 
-  private $_target = 'Behance\\FireClient\\Consumers\\ResponseConsumer';
+  private $_target    = 'Behance\\FireClient\\Consumers\\ResponseConsumer',
+          $_wf_header = 'X-Wf-1-1-1-1';
 
 
   /**
@@ -85,7 +86,7 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
 
       $client->expects( $this->once() )
         ->method( 'table' )
-        ->with( 'table', $prefix . ' ' . $label, $this->isType( 'array' ) );
+        ->with( $prefix . ' ' . $label, $this->isType( 'array' ) );
 
       $client->expects( $this->never() )
         ->method( 'warn' );
@@ -103,7 +104,7 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
 
     } // else
 
-    $headers  = [ ResponseConsumer::PROTOCOL_PREFIX . '1-2-3-4' => $header ];
+    $headers  = [ 'X-Wf-1-2-3-4' => $header ];
     $response = new Response( 200, $headers );
     $consumer = $this->getMock( $this->_target, null, [ $client ] );
 
@@ -149,7 +150,7 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
       ->method( 'warn' )
       ->with( $this->stringStartsWith( $prefix . ' ' ) );
 
-    $headers  = [ ResponseConsumer::PROTOCOL_PREFIX . '1-2-3-4' => 'abcdefg' ];
+    $headers  = [ $this->_wf_header => 'abcdefg' ];
 
     $mock     = new Mock( [ new Response( 200, $headers ) ] );
     $consumer = $this->getMock( $this->_target, null, [ $client ] );
@@ -168,7 +169,7 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
   public function runWildfireError( $payload, $expected_error ) {
 
     $console = $this->getMock( 'FirePHP' );
-    $headers = [ ResponseConsumer::PROTOCOL_PREFIX . '1-2-3-4' => $payload ];
+    $headers = [ $this->_wf_header => $payload ];
 
     $response  = new Response( 200, $headers );
     $mock      = new Mock( [ $response ] );
@@ -210,7 +211,7 @@ class ResponseConsumerTest extends \PHPUnit_Framework_TestCase {
   public function wildfireHeaderProvider() {
 
     $message = 'Message to be placed in the body of the log';
-    $prefix  = ResponseConsumer::PROTOCOL_PREFIX;
+    $prefix  = 'X-Wf-';
     $results = [];
     $types   = [
         FirePHP::LOG,

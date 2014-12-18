@@ -78,19 +78,27 @@ class ResponseConsumer {
    */
   public function publishRequest( Request $request, Response $response = null, $elapsed = 0 ) {
 
-    // Ensure response is populated before extracting body from it
-    $response_body = ( $response )
-                     ? $response->getBody()
-                     : '';
+    $request_body    = $request->getBody();
+    $request_preview = '';
 
-    $response_preview = ( $response_body )
-                        ? $response_body->read( $this->_preview_length )
+    if ( $request_body ) {
+      $request_body->seek( 0 ); // rewind the cursor in case a read was already done
+      $request_preview = $request_body->read( $this->_preview_length );
+      $request_body->seek( 0 ); // rewind the cursor, so subsequent reads are not affected
+    }
+
+    // Ensure response is populated before extracting body from it
+    $response_body    = ( $response )
+                        ? $response->getBody()
                         : '';
 
-    $request_body    = $request->getBody();
-    $request_preview = ( $request_body )
-                       ? $request_body->read( $this->_preview_length )
-                       : '';
+    $response_preview = '';
+
+    if ( $response_body ) {
+      $response_body->seek( 0 ); // rewind the cursor, in case a read was already done
+      $response_preview = $response_body->read( $this->_preview_length );
+      $response_body->seek( 0 ); // rewind the cursor, so subsequent reads are not affected
+    }
 
     $phrase   = ( $response )
                 ? $response->getReasonPhrase()

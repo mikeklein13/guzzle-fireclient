@@ -9,7 +9,7 @@
         }
     ],
     "require": {
-        "guzzlehttp/guzzle": "~5.0",
+        "guzzlehttp/guzzle": "~6.0",
         "firephp/firephp-core": "~0.4"
     },
     "require-dev": {
